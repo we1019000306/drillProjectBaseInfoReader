@@ -5,19 +5,29 @@ import pandas as pd
 import numpy as np
 import re
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import QThread, pyqtSignal, QMutex
+from PyQt5.QtCore import QThread, pyqtSignal, QMutex, Qt
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QFileDialog, QApplication, QTableWidgetItem, QHeaderView
 
 from View.ReaderBaseInfoUI import Ui_MainWindow
 globalAllInfoList:list = []
 globalFilesPathList:list = []
-globalCompanyList:list = []
-globalDrillInfoList:list = []
-globalDrillNumList:list = []
-globalDeepList:list = []
-globalPerDayDeepList:list = []
-globalWorkingStateList:list = []
-globalTipsList:list = []
+# #公司名称
+# globalCompanyList:list = []
+# #钻机基础信息
+# globalDrillInfoList:list = []
+# #项目名称
+# globalDrillProjectName:list = []
+# #钻机编号
+# globalDrillNumList:list = []
+# #钻孔当前深度
+# globalDeepList:list = []
+# #钻孔当日进尺
+# globalPerDayDeepList:list = []
+# #工况
+# globalWorkingStateList:list = []
+# #备注
+# globalTipsList:list = []
 
 
 class window(QtWidgets.QMainWindow,Ui_MainWindow):
@@ -29,23 +39,7 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
         self.selectFileButton.clicked.connect(self.setTableViewWithData)
     def getFileOnClicked(self):
         global globalFilesPathList
-        global globalCompanyList
-        global globalDrillInfoList
-        global globalDrillNumList
-        global globalDeepList
-        global globalPerDayDeepList
-        global globalWorkingStateList
-        global globalTipsList
-
         globalFilesPathList.clear()
-        globalCompanyList.clear()
-        globalDrillInfoList.clear()
-        globalDrillNumList.clear()
-        globalDeepList.clear()
-        globalPerDayDeepList.clear()
-        globalWorkingStateList.clear()
-        globalTipsList.clear()
-
         self.selectFileButton.setEnabled(False)
         self.thread_2 = Thread_2()
         self.thread_2._signal.connect(self.setSelectFileButtonEnable)
@@ -54,8 +48,6 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
                                                          "打开表格",
                                                          "",
                                                          "*.xlsx;*.xls;;All Files(*)")
-
-
         ###获取路径====================================================================
         if len(fileNames) == 0:
             print('未导入文件！！')
@@ -70,14 +62,6 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
 
     def loadBaseData(self):
         global globalFilesPathList
-        global globalAllInfoList
-        global globalCompanyList
-        global globalDrillInfoList
-        global globalDrillNumList
-        global globalDeepList
-        global globalPerDayDeepList
-        global globalWorkingStateList
-        global globalTipsList
 
         if len(globalFilesPathList) > 0:
             for i in globalFilesPathList:
@@ -88,16 +72,52 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
 
     def setTableViewWithData(self):
         global globalAllInfoList
-        print(globalAllInfoList)
+        self.dataTableWidget.setColumnCount(6)
+        self.dataTableWidget.setRowCount(len(globalAllInfoList))
+        n = 0
+        while n < len(globalAllInfoList):
+            companyItem = QTableWidgetItem(str(globalAllInfoList[n][0][0]))
+            drillProjectName = QTableWidgetItem(str(globalAllInfoList[n][1][0]))
+            drillNumber = QTableWidgetItem(str(globalAllInfoList[n][2][0]))
+            deepItem = QTableWidgetItem(str(globalAllInfoList[n][3][0]))
+            perDayDeepItem = QTableWidgetItem(str(globalAllInfoList[n][4][0]))
+            workingStateItem = QTableWidgetItem(str(globalAllInfoList[n][5][5]))
+            #tipsItem = QTableWidgetItem(str(globalAllInfoList[n][6][0]))
+
+            companyItem.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            drillProjectName.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            drillNumber.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            deepItem.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            perDayDeepItem.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            workingStateItem.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            #tipsItem.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+
+            companyItem.setFont(QFont('Times', 8, QFont.Black))
+            drillProjectName.setFont(QFont('Times', 8, QFont.Black))
+            drillNumber.setFont(QFont('Times', 8, QFont.Black))
+            deepItem.setFont(QFont('Times', 8, QFont.Black))
+            perDayDeepItem.setFont(QFont('Times', 8, QFont.Black))
+            workingStateItem.setFont(QFont('Times', 8, QFont.Black))
+            #tipsItem.setFont(QFont('Times', 8, QFont.Black))
+
+            self.dataTableWidget.setItem(n, 0, companyItem)
+            self.dataTableWidget.setItem(n, 1,drillProjectName)
+            self.dataTableWidget.setItem(n, 2, drillNumber)
+            self.dataTableWidget.setItem(n, 3, deepItem)
+            self.dataTableWidget.setItem(n, 4, perDayDeepItem)
+            self.dataTableWidget.setItem(n, 5, workingStateItem)
+            #self.dataTableWidget.setItem(n, 6, tipsItem)
+            n += 1
+        self.dataTableWidget.setHorizontalHeaderLabels(
+            ['公司', '项目名称', '钻机编号', '当前深度', '昨日下深', '工况'])
+        #self.dataTableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        self.dataTableWidget.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.dataTableWidget.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        QApplication.processEvents()
+
 def loadDataFromExcel(fileNames: str):
     global globalAllInfoList
-    global globalCompanyList
-    global globalDrillInfoList
-    global globalDrillNumList
-    global globalDeepList
-    global globalPerDayDeepList
-    global globalWorkingStateList
-    global globalTipsList
 
     path_openfile_name = fileNames
 
@@ -109,80 +129,92 @@ def loadDataFromExcel(fileNames: str):
         # dataDictKey = input_table.columns.values.tolist()
         # print(np.List(input_table.iloc[:,1]))
         dataList = np.array(input_table.iloc[3:, 0:])
-        # companyList = []
+        companyList = []
         # print(dataList)
         drillInfoList = []
+        drillProjectNameList = []
         drillNumList = []
         deepList = []
         perDayDeepList = []
         workingStateList = []
         tipsList = []
-        n = 0
+        m = 0
         for i in dataList:
-            # drillInfoList.clear()
-            # deepList.clear()
-            # perDayDeepList.clear()
-            # workingStateList.clear()
-            # tipsList.clear()
             # 索引出每个不为空的第一行即为新的项目数据行
             if str(i[0]) != 'nan':
                 drillInfoList.clear()
+                companyList.clear()
+                drillProjectNameList.clear()
                 drillNumList.clear()
                 deepList.clear()
                 perDayDeepList.clear()
                 workingStateList.clear()
                 tipsList.clear()
-                #companyList.append(str(input_table.iloc[n,0]))
 
-                # print(str(i).split())
-                drillInfoStrList = str(i).split()
-
-                #正则表达找出是否为队属钻机
-                pattern1 = re.compile(r'[-[0-9]+[\u4E00-\u9FA5A-Za-z0-9]+（.*\属）')
-                pattern2 = re.compile(r'[-[0-9]+[\u4E00-\u9FA5A-Za-z0-9]+（.*\协）')
-                pattern3 = re.compile(r'[-[0-9]+[\u4E00-\u9FA5A-Za-z0-9]+（.*\管）')
+                companyList.append(str(i[0]))
+                drillInfoStrList = str(i[1]).split()
                 drillInfoStr = str(drillInfoStrList)
-                if pattern1.search(drillInfoStr):
-                    drillNumStr = pattern1.search(drillInfoStr).group()
+                drillNameStr = str(i[1]).split()[0]
+                # 正则表达找出是项目名称
+                # patternName = re.compile(r'^[\u4e00-\u9fa5]+')
+                # if patternName.search(drillInfoStr):
+                #     drillNameStr = patternName.search(drillInfoStr).group()
+                # else:
+                #     drillNameStr = 'xxxx'
+                #     print('未找到项目名称！！！')
+                drillProjectNameList.append(drillNameStr)
+                print(drillNameStr)
+                # 正则表达找出是否为队属钻机
+                patternNum = re.compile(r'[-[0-9]+[\u4E00-\u9FA5A-Za-z0-9]+（.*\属）')
+                patternNum1 = re.compile(r'[-[0-9]+[\u4E00-\u9FA5A-Za-z0-9]+（.*\协）')
+                patternNum2 = re.compile(r'[-[0-9]+[\u4E00-\u9FA5A-Za-z0-9]+（.*\管）')
+
+                if patternNum.search(drillInfoStr):
+                    drillNumStr = patternNum.search(drillInfoStr).group()
                 else:
-                    if  pattern2.search(drillInfoStr):
-                        drillNumStr = pattern2.search(drillInfoStr).group()
+                    if patternNum1.search(drillInfoStr):
+                        drillNumStr = patternNum1.search(drillInfoStr).group()
                     else:
-                        if pattern3.search(drillInfoStr):
-                            drillNumStr = pattern3.search(drillInfoStr).group()
+                        if patternNum2.search(drillInfoStr):
+                            drillNumStr = patternNum2.search(drillInfoStr).group()
                         else:
+                            drillNumStr = 'xxxx'
                             print('未匹配！！！！')
                 print(drillNumStr)
                 drillNumList.append(drillNumStr)
-                #项目名称+施工地点+钻机编号+孔号+设计孔深+井型+孔径+开孔日期
-                drillInfoList.append(''.join(drillInfoStrList[2]+'\n'+drillInfoStrList[1]+'\n'+drillInfoStrList[0]))
+                # 项目名称+施工地点+钻机编号+孔号+设计孔深+井型+孔径+开孔日期
+                drillInfoList.append(
+                    ''.join(drillInfoStrList[2] + '\n' + drillInfoStrList[1] + '\n' + drillInfoStrList[0]))
 
                 # print('钻孔深度：' + str(input_table.iloc[n, 2]) + '(m)')
-                deepList.append(str(input_table.iloc[n+3, 2]) + '(m)')
+                deepList.append(str(input_table.iloc[m + 3, 2]) + '(m)')
 
-               # print('日进尺：' + str(input_table.iloc[n, 3]) + '(m)')
-                perDayDeepList.append(str(input_table.iloc[n+3, 3]) + '(m)')
+                # print('日进尺：' + str(input_table.iloc[m, 3]) + '(m)')
+                perDayDeepList.append(str(input_table.iloc[m + 3, 3]) + '(m)')
 
-                #print('工况：' + str(input_table.iloc[n, 5]))
-                workingStateList.append('6:00-10:00'+''.join(str(input_table.iloc[n+3, 5]).split()))
+                # print('工况：' + str(input_table.iloc[m, 5]))
+                workingStateList.append('6:00-10:00' + ''.join(str(input_table.iloc[m + 3, 5]).split()))
 
-                #print('备注：' + str(input_table.iloc[n, 16]))
-                tipsList.append(str(input_table.iloc[n, 16]))
+                # print('备注：' + str(input_table.iloc[m, 16]))
+                tipsList.append(str(input_table.iloc[m, 16]))
             else:
-                if n%6 == 1:
-                    workingStateList.append('10:00-14:00'+''.join(str(input_table.iloc[n, 5]).split()))
-                elif n%6 == 2:
-                    workingStateList.append('14:00-18:00'+''.join(str(input_table.iloc[n, 5]).split()))
-                elif n%6 == 3:
-                    workingStateList.append('18:00-22:00'+''.join(str(input_table.iloc[n, 5]).split()))
-                elif n%6 == 4:
-                    workingStateList.append('22:00-2:00'+''.join(str(input_table.iloc[n, 5]).split()))
-                elif n%6 == 5:
-                    workingStateList.append('2:00-6:00'+''.join(str(input_table.iloc[n, 5]).split()))
-                    list = [drillInfoList, drillNumList,deepList, perDayDeepList, workingStateList, tipsList]
-                    ndArray = np.array(list, dtype='object')
+                if m % 6 == 1:
+                    workingStateList.append('10:00-14:00' + ''.join(str(input_table.iloc[m, 5]).split()))
+                elif m % 6 == 2:
+                    workingStateList.append('14:00-18:00' + ''.join(str(input_table.iloc[m, 5]).split()))
+                elif m % 6 == 3:
+                    workingStateList.append('18:00-22:00' + ''.join(str(input_table.iloc[m, 5]).split()))
+                elif m % 6 == 4:
+                    workingStateList.append('22:00-2:00' + ''.join(str(input_table.iloc[m, 5]).split()))
+                elif m % 6 == 5:
+                    workingStateList.append('2:00-6:00' + ''.join(str(input_table.iloc[m, 5]).split()))
+                    ndList1 = [companyList.copy(), drillProjectNameList.copy(), drillNumList.copy(), deepList.copy(), perDayDeepList.copy(),
+                            workingStateList.copy(), tipsList.copy()]
+                    ndArray = np.array(ndList1, dtype='object')
                     globalAllInfoList.append(ndArray)
-            n += 1
+            m += 1
+        print(globalAllInfoList)
+
 
 qmut_1 = QMutex() # 创建线程锁
 qmut_2 = QMutex()
@@ -222,9 +254,4 @@ if __name__ == '__main__':
     MainWindow = window()  # 创建窗体对象
     MainWindow.show()  # 显示窗体
     sys.exit(app.exec_())  # 程序关闭时退出进程
-    # a = []
-    # a.append('1')
-    # b = ['a']
-    # b.insert(0,'1')
-    # print(a)
-    # print(b)
+
