@@ -12,23 +12,6 @@ from PyQt5.QtWidgets import QFileDialog, QApplication, QTableWidgetItem, QHeader
 from View.ReaderBaseInfoUI import Ui_MainWindow
 globalAllInfoList:list = []
 globalFilesPathList:list = []
-# #公司名称
-# globalCompanyList:list = []
-# #钻机基础信息
-# globalDrillInfoList:list = []
-# #项目名称
-# globalDrillProjectName:list = []
-# #钻机编号
-# globalDrillNumList:list = []
-# #钻孔当前深度
-# globalDeepList:list = []
-# #钻孔当日进尺
-# globalPerDayDeepList:list = []
-# #工况
-# globalWorkingStateList:list = []
-# #备注
-# globalTipsList:list = []
-
 
 class window(QtWidgets.QMainWindow,Ui_MainWindow):
     def __init__(self):
@@ -111,9 +94,11 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
         self.dataTableWidget.setHorizontalHeaderLabels(
             ['公司', '项目名称', '钻机编号', '当前深度', '昨日下深', '工况'])
         #self.dataTableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
+        self.dataTableWidget.horizontalHeader().setStyleSheet(
+            "QHeaderView::section{background-color:rgb(155, 194, 230);font:11pt '宋体';color: black;};")
         self.dataTableWidget.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.dataTableWidget.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.dataTableWidget.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeToContents)
         QApplication.processEvents()
 
 def loadDataFromExcel(fileNames: str):
@@ -211,7 +196,7 @@ def loadDataFromExcel(fileNames: str):
                     ndList1 = [companyList.copy(), drillProjectNameList.copy(), drillNumList.copy(), deepList.copy(), perDayDeepList.copy(),
                             workingStateList.copy(), tipsList.copy()]
                     ndArray = np.array(ndList1, dtype='object')
-                    globalAllInfoList.append(ndArray)
+                    if '外协' not in drillNumStr:globalAllInfoList.append(ndArray)
             m += 1
         print(globalAllInfoList)
 
