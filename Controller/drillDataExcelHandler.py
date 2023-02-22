@@ -1,9 +1,9 @@
 import sys
 import time
-
 import pandas as pd
 import numpy as np
 import re
+import xlwt
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QThread, pyqtSignal, QMutex, Qt
 from PyQt5.QtGui import QFont
@@ -20,6 +20,8 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
         self.selectFileButton.clicked.connect(self.getFileOnClicked)
         self.selectFileButton.clicked.connect(self.loadBaseData)
         self.selectFileButton.clicked.connect(self.setTableViewWithData)
+        self.savePushButton.clicked.connect(self.saveBtnClicked)
+
     def getFileOnClicked(self):
         global globalFilesPathList
         globalFilesPathList.clear()
@@ -52,6 +54,7 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
                 loadDataFromExcel(i)
         else:
             print('未导入文件！！！！')
+
 
     def setTableViewWithData(self):
         global globalAllInfoList
@@ -100,6 +103,24 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
         self.dataTableWidget.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.dataTableWidget.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeToContents)
         QApplication.processEvents()
+
+    def saveBtnClicked(self):
+        # 创建一个Workbook对象 编码encoding
+        Excel = xlwt.Workbook(encoding='utf-8', style_compression=0)
+        # 添加一个sheet工作表、sheet名命名为Sheet1、cell_overwrite_ok=True允许覆盖写
+        table = Excel.add_sheet('Sheet1', cell_overwrite_ok=True)
+
+        rowCount = self.dataTableWidget.rowCount()
+        columnCount = self.dataTableWidget.columnCount()
+        i = 0
+        while i < columnCount:
+            j = 0
+            while j < rowCount:
+                table.write(j, i, self.dataTableWidget.item(j, i).text())
+                j = j + 1
+            i = i + 1
+
+        Excel.save(r'C:\Users\18637\Desktop\院属钻机生产日报.xlsx')
 
 def loadDataFromExcel(fileNames: str):
     global globalAllInfoList
@@ -166,6 +187,8 @@ def loadDataFromExcel(fileNames: str):
                             drillNumStr = 'xxxx'
                             print('未匹配！！！！')
                 print(drillNumStr)
+                if '队管' in drillNumStr:
+                    drillNumStr = drillNumStr.replace('管', '属')
                 drillNumList.append(drillNumStr)
                 # 项目名称+施工地点+钻机编号+孔号+设计孔深+井型+孔径+开孔日期
                 drillInfoList.append(
@@ -196,10 +219,14 @@ def loadDataFromExcel(fileNames: str):
                     ndList1 = [companyList.copy(), drillProjectNameList.copy(), drillNumList.copy(), deepList.copy(), perDayDeepList.copy(),
                             workingStateList.copy(), tipsList.copy()]
                     ndArray = np.array(ndList1, dtype='object')
+
                     if '外协' not in drillNumStr:globalAllInfoList.append(ndArray)
             m += 1
         print(globalAllInfoList)
 
+#
+# def writeDataInExcel():
+#     print(111)
 
 qmut_1 = QMutex() # 创建线程锁
 qmut_2 = QMutex()
