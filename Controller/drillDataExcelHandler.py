@@ -10,6 +10,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QFileDialog, QApplication, QTableWidgetItem, QHeaderView, QMessageBox
 from View.ReaderBaseInfoUI import Ui_MainWindow
 import pymongo
+import copy
 
 globalAllInfoList:list = []
 globalFilesPathList:list = []
@@ -22,12 +23,17 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
         self.selectFileButton.clicked.connect(self.loadBaseData)
         self.selectFileButton.clicked.connect(self.setTableViewWithData)
         self.savePushButton.clicked.connect(self.saveBtnClicked)
-        self.savePushButton.clicked.connect(self.savedInMongoDB)
+        self.mongoDBButton.clicked.connect(self.savedInMongoDB)
 
 
     def getFileOnClicked(self):
         global globalFilesPathList
+        global globalCollectionName
+        global globalAllInfoList
         globalFilesPathList.clear()
+        globalCollectionName.clear()
+        globalAllInfoList.clear()
+        self.dataTableWidget.clearContents()
         self.selectFileButton.setEnabled(False)
         self.thread_2 = Thread_2()
         self.thread_2._signal.connect(self.setSelectFileButtonEnable)
@@ -61,13 +67,17 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
                     QMessageBox.information(MainWindow,
                                             '警告！！！',
                                             '请确认文件名中是否存在日期信息')
-                if len(set(globalCollectionName)) == 1:
-                    loadDataFromExcel(i)
-                    print(set(globalCollectionName))
-                else:
-                    QMessageBox.information(MainWindow,
-                                            '警告！！！',
-                                            '请确认所选生产日报是否为同一天！！！')
+                    break
+            if len(set(globalCollectionName)) == 1:
+                print(set(globalCollectionName))
+                for i in globalFilesPathList : loadDataFromExcel(i)
+                self.timeLabel.setText('2023年'+list(set(globalCollectionName))[0])
+            else:
+                QMessageBox.information(MainWindow,
+                                        '警告！！！',
+                                        '请确认所选生产日报是否为同一天！！！')
+
+
 
         else:
             print('未导入文件！！！！')
@@ -123,21 +133,43 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
 
     def saveBtnClicked(self):
         # 创建一个Workbook对象 编码encoding
-        Excel = xlwt.Workbook(encoding='utf-8', style_compression=0)
+        # Excel = xlwt.Workbook(encoding='utf-8', style_compression=0)
         # 添加一个sheet工作表、sheet名命名为Sheet1、cell_overwrite_ok=True允许覆盖写
-        table = Excel.add_sheet('Sheet1', cell_overwrite_ok=True)
+        # table = Excel.add_sheet('Sheet1', cell_overwrite_ok=True)
 
         rowCount = self.dataTableWidget.rowCount()
         columnCount = self.dataTableWidget.columnCount()
-        i = 0
-        while i < columnCount:
-            j = 0
-            while j < rowCount:
-                table.write(j, i, self.dataTableWidget.item(j, i).text())
-                j = j + 1
-            i = i + 1
+        # i = 0
+        # while i < columnCount:
+        #     j = 0
+        #     while j < rowCount:
+        #         table.write(j, i, self.dataTableWidget.item(j, i).text())
+        #         j = j + 1
+        #     i = i + 1
+        row_num = 0  # 记录写入行数
+        col_list = []  # 记录每行宽度
+        # 个人信息：姓名，性别，年龄，手机号，固定电话，邮箱
 
-        Excel.save(r'C:\Users\18637\Desktop\院属钻机生产日报.xlsx')
+        # 创建一个Workbook对象
+        book = xlwt.Workbook(encoding="utf-8", style_compression=0)
+        # 创建一个sheet对象
+        sheet = book.add_sheet('drillProject', cell_overwrite_ok=True)
+        col_num = [0 for x in range(0, rowCount)]
+        # 写入数据
+        for i in range(0, rowCount-1):
+            for j in range(0, columnCount-1):
+                sheet.write(i, j, self.dataTableWidget.item(i, j).text())
+                col_num[j] = len(self.dataTableWidget.item(i, j).text().encode('gb18030'))  # 计算每列值的大小
+            col_list.append(copy.copy(col_num))  # 记录一行每列写入的长度
+            row_num += 1
+        # 获取每列最大宽度
+        col_max_num = get_max_col(col_list)
+        # 设置自适应列宽
+        for i in range(0, len(col_max_num)):
+            # 256*字符数得到excel列宽,为了不显得特别紧凑添加两个字符宽度
+            sheet.col(i).width = 256 * (col_max_num[i] + 2)
+        # 保存excel文件
+        book.save(r'C:\Users\18637\Desktop\院属钻机生产日报.xlsx')
 
     def savedInMongoDB(self):
         global globalAllInfoList
@@ -164,7 +196,7 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
             result = collection.insert_one(drillProjectItem)
             print(result)
             i = i + 1
-
+        QMessageBox.information(MainWindow,'提示：','成功写入数据库！！！')
 def loadDataFromExcel(fileNames: str):
     global globalAllInfoList
     path_openfile_name = fileNames
@@ -285,8 +317,42 @@ def loadDataFromExcel(fileNames: str):
                                 '警告！！',
                                 '你未选择任何文件！！')
 
-# def writeDataInExcel():
-#     print(111)
+# 获取每列所占用的最大列宽
+def get_max_col(max_list):
+    line_list = []
+    # i表示行，j代表列
+    for j in range(len(max_list[0])):
+        line_num = []
+        for i in range(len(max_list)):
+            line_num.append(max_list[i][j])  # 将每列的宽度存入line_num
+        line_list.append(max(line_num))  # 将每列最大宽度存入line_list
+    return line_list
+# def write_excel():
+#     row_num = 0  # 记录写入行数
+#     col_list = []  # 记录每行宽度
+#     # 个人信息：姓名，性别，年龄，手机号，固定电话，邮箱
+#
+#     # 创建一个Workbook对象
+#     book = xlwt.Workbook(encoding="utf-8",style_compression=0)
+#     # 创建一个sheet对象
+#     sheet = book.add_sheet('person_msg', cell_overwrite_ok=True)
+#     col_num = [0 for x in range(0, len(data))]
+#     # 写入数据
+#     for i in range(0, len(data)):
+#         for j in range(0, len(data[i])):
+#             sheet.write(row_num, j, data[i][j])
+#             col_num[j] = len(data[i][j].encode('gb18030')) # 计算每列值的大小
+#         col_list.append(copy.copy(col_num))  # 记录一行每列写入的长度
+#         row_num += 1
+#     # 获取每列最大宽度
+#     col_max_num = get_max_col(col_list)
+#     # 设置自适应列宽
+#     for i in range(0, len(col_max_num)):
+#         # 256*字符数得到excel列宽,为了不显得特别紧凑添加两个字符宽度
+#         sheet.col(i).width = 256 * (col_max_num[i] + 2)
+#     # 保存excel文件
+#     book.save('person_msg.xls')
+
 
 qmut_1 = QMutex() # 创建线程锁
 qmut_2 = QMutex()
