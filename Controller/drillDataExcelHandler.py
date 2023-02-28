@@ -105,12 +105,12 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
             workingStateItem.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
             #tipsItem.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
 
-            companyItem.setFont(QFont('Times', 8, QFont.Black))
-            drillProjectName.setFont(QFont('Times', 8, QFont.Black))
-            drillNumber.setFont(QFont('Times', 8, QFont.Black))
-            deepItem.setFont(QFont('Times', 8, QFont.Black))
-            perDayDeepItem.setFont(QFont('Times', 8, QFont.Black))
-            workingStateItem.setFont(QFont('Times', 8, QFont.Black))
+            companyItem.setFont(QFont('Times', 15, QFont.Black))
+            drillProjectName.setFont(QFont('Times', 15, QFont.Black))
+            drillNumber.setFont(QFont('Times', 15, QFont.Black))
+            deepItem.setFont(QFont('Times', 15, QFont.Black))
+            perDayDeepItem.setFont(QFont('Times', 15, QFont.Black))
+            workingStateItem.setFont(QFont('Times', 15, QFont.Black))
             #tipsItem.setFont(QFont('Times', 8, QFont.Black))
 
             self.dataTableWidget.setItem(n, 0, companyItem)
@@ -125,7 +125,7 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
             ['公司', '项目名称', '钻机编号', '当前深度', '昨日下深', '工况'])
         #self.dataTableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.dataTableWidget.horizontalHeader().setStyleSheet(
-            "QHeaderView::section{background-color:rgb(155, 194, 230);font:11pt '宋体';color: black;};")
+            "QHeaderView::section{background-color:rgb(155, 194, 230);font:15pt '宋体';color: black;};")
         self.dataTableWidget.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.dataTableWidget.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.dataTableWidget.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeToContents)
@@ -137,8 +137,8 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
         # 添加一个sheet工作表、sheet名命名为Sheet1、cell_overwrite_ok=True允许覆盖写
         # table = Excel.add_sheet('Sheet1', cell_overwrite_ok=True)
 
-        rowCount = self.dataTableWidget.rowCount()
-        columnCount = self.dataTableWidget.columnCount()
+        rowCount = self.dataTableWidget.rowCount()+1
+        columnCount = self.dataTableWidget.columnCount()+1
         # i = 0
         # while i < columnCount:
         #     j = 0
@@ -146,22 +146,40 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
         #         table.write(j, i, self.dataTableWidget.item(j, i).text())
         #         j = j + 1
         #     i = i + 1
+        alignment = xlwt.Alignment()
+        # 0x01(左端对齐)、0x02(水平方向上居中对齐)、0x03(右端对齐)
+        alignment.horz = 0x02
+        # 0x00(上端对齐)、 0x01(垂直方向上居中对齐)、0x02(底端对齐)
+        alignment.vert = 0x01
+
+        style0 = xlwt.XFStyle()
+        style0.alignment = alignment
+
         row_num = 0  # 记录写入行数
         col_list = []  # 记录每行宽度
         # 个人信息：姓名，性别，年龄，手机号，固定电话，邮箱
-
+        headerList = ['序号','公司名称','项目名称','钻机编号','当前深度','昨日下深','工况']
         # 创建一个Workbook对象
         book = xlwt.Workbook(encoding="utf-8", style_compression=0)
         # 创建一个sheet对象
         sheet = book.add_sheet('drillProject', cell_overwrite_ok=True)
         col_num = [0 for x in range(0, rowCount)]
-        # 写入数据
-        for i in range(0, rowCount-1):
-            for j in range(0, columnCount-1):
-                sheet.write(i, j, self.dataTableWidget.item(i, j).text())
-                col_num[j] = len(self.dataTableWidget.item(i, j).text().encode('gb18030'))  # 计算每列值的大小
+        # 写入关键数据
+        for i in range(1, rowCount-1):
+            for j in range(1, columnCount):
+                sheet.write(i, j, self.dataTableWidget.item(i-1, j-1).text(),style0)
+                col_num[j] = len(self.dataTableWidget.item(i-1, j-1).text().encode('gb18030'))  # 计算每列值的大小
             col_list.append(copy.copy(col_num))  # 记录一行每列写入的长度
             row_num += 1
+        # 写入表头和补充序号
+        for j in range(0, columnCount):
+            sheet.write(0, j, headerList[j],style0)
+
+        indexList = [3]
+        for i in range(1, rowCount-1):
+            sheet.write(i, 0, i,style0)
+            indexList.append(i)
+        col_list.insert(0,indexList)
         # 获取每列最大宽度
         col_max_num = get_max_col(col_list)
         # 设置自适应列宽
@@ -169,34 +187,43 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
             # 256*字符数得到excel列宽,为了不显得特别紧凑添加两个字符宽度
             sheet.col(i).width = 256 * (col_max_num[i] + 2)
         # 保存excel文件
+
+
         book.save(r'C:\Users\18637\Desktop\院属钻机生产日报.xlsx')
+        QMessageBox.information(MainWindow, '提示：', '到处excel成功！！！')
 
     def savedInMongoDB(self):
         global globalAllInfoList
+        global globalCollectionName
         client = pymongo.MongoClient(host='localhost', port=27017)
         db = client.drillProject
-        collection = db.drillProjectItems
-        rowCount = self.dataTableWidget.rowCount()
-        # columnCount = self.dataTableWidget.columnCount()
-        i = 0
-        while i < rowCount:
-            # j = 0
-            # while j < columnCount:
-            #     # drillProjectItem = ['company':]
-            #     j = j + 1
-            keysList = ['company','projectName','drillId','currentDeep','lastDayDeep','workState']
-            print(globalAllInfoList[i])
-            projectItem = []
-            for infoList in globalAllInfoList[i]:
-                infoListStr = ''.join(infoList)
-                projectItem.append(infoListStr)
-                print(projectItem)
-            drillProjectItem =  dict(zip(keysList,projectItem))
-            print(drillProjectItem)
-            result = collection.insert_one(drillProjectItem)
-            print(result)
-            i = i + 1
-        QMessageBox.information(MainWindow,'提示：','成功写入数据库！！！')
+        if len(globalCollectionName) > 0:
+            collectionName = globalCollectionName[0]
+            collection = db[collectionName]
+            rowCount = self.dataTableWidget.rowCount()
+            # columnCount = self.dataTableWidget.columnCount()
+            i = 0
+            while i < rowCount:
+                # j = 0
+                # while j < columnCount:
+                #     # drillProjectItem = ['company':]
+                #     j = j + 1
+                keysList = ['company', 'projectName', 'drillId', 'currentDeep', 'lastDayDeep', 'workState']
+                print(globalAllInfoList[i])
+                projectItem = []
+                for infoList in globalAllInfoList[i]:
+                    infoListStr = ''.join(infoList)
+                    projectItem.append(infoListStr)
+                    print(projectItem)
+                drillProjectItem = dict(zip(keysList, projectItem))
+                print(drillProjectItem)
+                result = collection.update_one({"drillId":drillProjectItem["drillId"]},{"$set":drillProjectItem},upsert=True)
+                print(result)
+                i = i + 1
+            QMessageBox.information(MainWindow, '提示：', '成功写入数据库！！！')
+        else:
+            QMessageBox.information(MainWindow, '警告！！！', '数据源选择有误，无法写入数据库！！！')
+
 def loadDataFromExcel(fileNames: str):
     global globalAllInfoList
     path_openfile_name = fileNames
