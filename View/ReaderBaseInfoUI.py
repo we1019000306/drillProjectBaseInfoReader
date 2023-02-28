@@ -64,7 +64,7 @@ class Ui_MainWindow(object):
         self.gridLayout_6.setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
         self.gridLayout_6.setContentsMargins(6, 6, 6, 6)
         self.gridLayout_6.setObjectName("gridLayout_6")
-        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
+        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.gridLayout_6.addItem(spacerItem3, 0, 3, 1, 1)
         spacerItem4 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.gridLayout_6.addItem(spacerItem4, 0, 8, 1, 1)
