@@ -1,5 +1,7 @@
 import sys
+import os
 import time
+import datetime
 import pandas as pd
 import numpy as np
 import re
@@ -62,7 +64,10 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
                 #print(i)
                 patternName = re.compile(r'[0-9]+月+[0-9]+日')
                 if patternName.search(i):
-                    globalCollectionName.append(patternName.search(i).group())
+                    print("2023/"+patternName.search(i).group().replace('日','').replace('月','/'))
+                    date = datetime.datetime.strptime("2023/"+patternName.search(i).group().replace('日','').replace('月','/'), "%Y/%m/%d")
+                    dateStr = date.strftime("%Y/%m/%d")
+                    globalCollectionName.append(dateStr)
                 else:
                     QMessageBox.information(MainWindow,
                                             '警告！！！',
@@ -71,7 +76,7 @@ class window(QtWidgets.QMainWindow,Ui_MainWindow):
             if len(set(globalCollectionName)) == 1:
                 print(set(globalCollectionName))
                 for i in globalFilesPathList : loadDataFromExcel(i)
-                self.timeLabel.setText('2023年'+list(set(globalCollectionName))[0])
+                self.timeLabel.setText(list(set(globalCollectionName))[0])
             else:
                 QMessageBox.information(MainWindow,
                                         '警告！！！',
@@ -311,18 +316,18 @@ def loadDataFromExcel(fileNames: str):
                     workingStateList.append('6:00-10:00' + ''.join(str(input_table.iloc[m + 3, 5]).split()))
 
                     # print('备注：' + str(input_table.iloc[m, 16]))
-                    tipsList.append(str(input_table.iloc[m, 16]))
+                    tipsList.append(str(input_table.iloc[m + 3, 16]))
                 else:
                     if m % 6 == 1:
-                        workingStateList.append('10:00-14:00' + ''.join(str(input_table.iloc[m, 5]).split()))
+                        workingStateList.append('10:00-14:00' + ''.join(str(input_table.iloc[m+3, 5]).split()))
                     elif m % 6 == 2:
-                        workingStateList.append('14:00-18:00' + ''.join(str(input_table.iloc[m, 5]).split()))
+                        workingStateList.append('14:00-18:00' + ''.join(str(input_table.iloc[m+3, 5]).split()))
                     elif m % 6 == 3:
-                        workingStateList.append('18:00-22:00' + ''.join(str(input_table.iloc[m, 5]).split()))
+                        workingStateList.append('18:00-22:00' + ''.join(str(input_table.iloc[m+3, 5]).split()))
                     elif m % 6 == 4:
-                        workingStateList.append('22:00-2:00' + ''.join(str(input_table.iloc[m, 5]).split()))
+                        workingStateList.append('22:00-2:00' + ''.join(str(input_table.iloc[m+3, 5]).split()))
                     elif m % 6 == 5:
-                        workingStateList.append('2:00-6:00' + ''.join(str(input_table.iloc[m, 5]).split()))
+                        workingStateList.append('2:00-6:00' + ''.join(str(input_table.iloc[m+3, 5]).split()))
                         ndList1 = [companyList.copy(), drillProjectNameList.copy(), drillNumList.copy(), deepList.copy(), perDayDeepList.copy(),
                                 workingStateList.copy(), tipsList.copy()]
                         ndArray = np.array(ndList1, dtype='object')
@@ -410,7 +415,6 @@ class Thread_2(QThread):  # 线程2
             time.sleep(0.5)
         # qmut_2.unlock()  # 解锁
         self._signal.emit()
-
 
 
 if __name__ == '__main__':
